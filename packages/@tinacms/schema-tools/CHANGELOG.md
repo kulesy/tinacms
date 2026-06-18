@@ -1,5 +1,11 @@
 # @tinacms/schema-tools
 
+## 2.8.2
+
+### Patch Changes
+
+- [#7058](https://github.com/tinacms/tinacms/pull/7058) [`5ba482b`](https://github.com/tinacms/tinacms/commit/5ba482b9c10d76ea7f7bea2a442a8999824736a8) Thanks [@Aibono1225](https://github.com/Aibono1225)! - Fix Local Mode banner for absolute contentApiUrlOverride
+
 ## 2.8.1
 
 ### Patch Changes

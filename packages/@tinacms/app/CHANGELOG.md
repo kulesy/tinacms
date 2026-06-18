@@ -1,5 +1,15 @@
 # @tinacms/app
 
+## 2.5.7
+
+### Patch Changes
+
+- [#7062](https://github.com/tinacms/tinacms/pull/7062) [`caadf1f`](https://github.com/tinacms/tinacms/commit/caadf1f68ec602277bcd4225a69c13fdc5402f7b) Thanks [@isaaclombardssw](https://github.com/isaaclombardssw)! - Improve global collection UX: global collections now appear once in the sidebar "Site" section (globe icon) instead of being duplicated under Collections, open directly in the form instead of a popup modal, and single-document global collections skip the document list and go straight to the form. Global collections with zero or multiple documents fall through to the normal list view.
+
+- Updated dependencies [[`c1994b3`](https://github.com/tinacms/tinacms/commit/c1994b36907710aeb36fd114fa6d0a8a0e1210d0), [`caadf1f`](https://github.com/tinacms/tinacms/commit/caadf1f68ec602277bcd4225a69c13fdc5402f7b), [`5ba482b`](https://github.com/tinacms/tinacms/commit/5ba482b9c10d76ea7f7bea2a442a8999824736a8), [`871ce31`](https://github.com/tinacms/tinacms/commit/871ce31531d3d7dc379ec7d58cf427984dd6620a)]:
+  - tinacms@3.9.4
+  - @tinacms/mdx@2.1.8
+
 ## 2.5.6
 
 ### Patch Changes

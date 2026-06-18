@@ -1,5 +1,22 @@
 # tinacms
 
+## 3.9.4
+
+### Patch Changes
+
+- [#6939](https://github.com/tinacms/tinacms/pull/6939) [`c1994b3`](https://github.com/tinacms/tinacms/commit/c1994b36907710aeb36fd114fa6d0a8a0e1210d0) Thanks [@isaaclombardssw](https://github.com/isaaclombardssw)! - feat(tinacms): add a back-to-collection breadcrumb on the admin editor/create pages and in the visual editor sidebar, switch the breadcrumb separator from a chevron to a slash, show only the filename (not the full folder path) in the root breadcrumb across both editors, and truncate long crumbs so the trail no longer overflows
+
+- [#7062](https://github.com/tinacms/tinacms/pull/7062) [`caadf1f`](https://github.com/tinacms/tinacms/commit/caadf1f68ec602277bcd4225a69c13fdc5402f7b) Thanks [@isaaclombardssw](https://github.com/isaaclombardssw)! - Improve global collection UX: global collections now appear once in the sidebar "Site" section (globe icon) instead of being duplicated under Collections, open directly in the form instead of a popup modal, and single-document global collections skip the document list and go straight to the form. Global collections with zero or multiple documents fall through to the normal list view.
+
+- [#7058](https://github.com/tinacms/tinacms/pull/7058) [`5ba482b`](https://github.com/tinacms/tinacms/commit/5ba482b9c10d76ea7f7bea2a442a8999824736a8) Thanks [@Aibono1225](https://github.com/Aibono1225)! - Fix Local Mode banner for absolute contentApiUrlOverride
+
+- [#7063](https://github.com/tinacms/tinacms/pull/7063) [`871ce31`](https://github.com/tinacms/tinacms/commit/871ce31531d3d7dc379ec7d58cf427984dd6620a) Thanks [@18-th](https://github.com/18-th)! - Remove unused `add` dependency
+
+- Updated dependencies [[`5ba482b`](https://github.com/tinacms/tinacms/commit/5ba482b9c10d76ea7f7bea2a442a8999824736a8)]:
+  - @tinacms/schema-tools@2.8.2
+  - @tinacms/mdx@2.1.8
+  - @tinacms/search@1.2.20
+
 ## 3.9.3
 
 ### Patch Changes
