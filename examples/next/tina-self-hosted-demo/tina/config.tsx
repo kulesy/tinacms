@@ -6,23 +6,13 @@ import { heroBlockSchema } from '@/components/blocks/hero';
 import { testimonialBlockSchema } from '@/components/blocks/testimonial';
 import { ColorPickerInput } from '@/components/fields/color';
 import { iconSchema } from '@/components/util/icon';
-import {
-  TinaUserCollection,
-  UsernamePasswordAuthJSProvider,
-} from 'tinacms-authjs/dist/tinacms';
 
-const isLocal = process.env.TINA_PUBLIC_IS_LOCAL === 'true';
+// POC: git-only, no-auth demo. Uses LocalAuthProvider (no login) and no authjs
+// user collection - the backend reads/writes content straight from git.
 const config = defineStaticConfig({
   contentApiUrlOverride: '/api/tina/gql',
-  clientId: process.env.NEXT_PUBLIC_TINA_CLIENT_ID!,
-  authProvider: isLocal
-    ? new LocalAuthProvider()
-    : new UsernamePasswordAuthJSProvider(),
-  branch:
-    process.env.NEXT_PUBLIC_TINA_BRANCH! || // custom branch env override
-    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF! || // Vercel branch env
-    process.env.HEAD!, // Netlify branch env
-  token: process.env.TINA_TOKEN!,
+  authProvider: new LocalAuthProvider(),
+  branch: process.env.NEXT_PUBLIC_TINA_BRANCH || 'main',
   media: {
     // If you wanted cloudinary do this
     // loadCustomStore: async () => {
@@ -42,7 +32,6 @@ const config = defineStaticConfig({
   },
   schema: {
     collections: [
-      TinaUserCollection,
       {
         label: 'Blog Posts',
         name: 'post',
