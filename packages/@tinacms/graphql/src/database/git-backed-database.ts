@@ -20,7 +20,7 @@
  */
 import path from 'path';
 import micromatch from 'micromatch';
-import { Database, type DatabaseArgs } from './index';
+import { Database, type DatabaseArgs, type GitProvider } from './index';
 import {
   loadAndParseWithAliases,
   transformDocument,
@@ -33,9 +33,23 @@ const SYSTEM_FILES = ['_schema', '_graphql', '_lookup'];
 export class GitBackedDatabase extends Database {
   private _gitLookup: Record<string, any> | undefined;
 
-  // No level is needed - all content I/O goes through the bridge.
-  constructor(config: Omit<DatabaseArgs, 'level'> & { level?: any }) {
-    super({ ...config, level: config.level } as DatabaseArgs);
+  // No level is needed - all content I/O goes through the bridge. Pass a
+  // `gitProvider` to have writes committed (its onPut/onDelete are wired up for
+  // you), or pass onPut/onDelete directly. With none, writes land in the local
+  // working tree.
+  constructor(
+    config: Omit<DatabaseArgs, 'level'> & {
+      level?: any;
+      gitProvider?: GitProvider;
+    }
+  ) {
+    const { gitProvider, onPut, onDelete, ...rest } = config;
+    super({
+      ...rest,
+      level: config.level,
+      onPut: gitProvider ? gitProvider.onPut.bind(gitProvider) : onPut,
+      onDelete: gitProvider ? gitProvider.onDelete.bind(gitProvider) : onDelete,
+    } as DatabaseArgs);
   }
 
   private generated(file: string) {
@@ -113,9 +127,20 @@ export class GitBackedDatabase extends Database {
     } = queryOptions;
 
     if (filterChain.length) {
-      throw new Error(
-        'GitBackedDatabase POC does not yet support filtered queries'
-      );
+      // POC: filtered queries aren't supported without an index. This includes
+      // the reference-check query the resolver fires when opening ANY document
+      // (hasReferences). Return empty rather than throwing so single-document
+      // reads and the admin edit form keep working - reference counts just read
+      // as zero. Full filter support would parse each doc and apply makeFilter.
+      return {
+        edges: [],
+        pageInfo: {
+          hasPreviousPage: false,
+          hasNextPage: false,
+          startCursor: '',
+          endCursor: '',
+        },
+      };
     }
 
     const tinaSchema = await this.getSchema();
