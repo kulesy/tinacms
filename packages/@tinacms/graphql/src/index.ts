@@ -24,6 +24,7 @@ export {
   createDatabase,
   createLocalDatabase,
 } from './database';
+export { GitBackedDatabase } from './database/git-backed-database';
 import type { Config } from '@tinacms/schema-tools';
 export { getChangedFiles, getSha, shaExists } from './git';
 export * from './auth/utils';
