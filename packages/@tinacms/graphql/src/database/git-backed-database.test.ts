@@ -15,6 +15,7 @@ import { buildSchema } from '..';
 import type { Bridge } from './bridge';
 import type { Schema } from '@tinacms/schema-tools';
 import { GitBackedDatabase } from './git-backed-database';
+import { REFS_COLLECTIONS_SORT_KEY } from './datalayer';
 
 class InMemoryBridge implements Bridge {
   rootPath = '';
@@ -144,5 +145,39 @@ describe('GitBackedDatabase (no index)', () => {
       'content/posts/epsilon.json',
     ]);
     expect(page2.pageInfo.hasNextPage).toBe(true);
+  });
+});
+
+describe('GitBackedDatabase filtered queries', () => {
+  let database: GitBackedDatabase;
+  beforeEach(async () => {
+    ({ database } = await setup());
+  });
+
+  it('throws loudly on a genuine user filter rather than returning empty', async () => {
+    await expect(
+      database.query(
+        {
+          collection: 'post',
+          filterChain: [{ title: { eq: 'Alpha' } }],
+        },
+        (p: string) => p
+      )
+    ).rejects.toThrow(/cannot serve a filtered query/i);
+  });
+
+  it('returns empty for the reference-check query so document opens keep working', async () => {
+    // hasReferences / findReferences query with the reference pseudo-index.
+    const res = await database.query(
+      {
+        collection: 'post',
+        filterChain: [{ __ref__: { eq: 'content/posts/alpha.json' } }],
+        sort: REFS_COLLECTIONS_SORT_KEY,
+      },
+      (p: string) => p
+    );
+    expect(res.edges).toEqual([]);
+    expect(res.pageInfo.hasNextPage).toBe(false);
+    expect(res.pageInfo.hasPreviousPage).toBe(false);
   });
 });

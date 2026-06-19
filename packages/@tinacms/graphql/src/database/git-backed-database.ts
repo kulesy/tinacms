@@ -27,6 +27,7 @@ import {
   normalizePath,
 } from './util';
 import { createSchema } from '../schema/createSchema';
+import { REFS_COLLECTIONS_SORT_KEY } from './datalayer';
 
 const SYSTEM_FILES = ['_schema', '_graphql', '_lookup'];
 
@@ -122,25 +123,36 @@ export class GitBackedDatabase extends Database {
       after,
       last,
       before,
+      sort,
       filterChain = [],
       collection: collectionName,
     } = queryOptions;
 
     if (filterChain.length) {
-      // POC: filtered queries aren't supported without an index. This includes
-      // the reference-check query the resolver fires when opening ANY document
-      // (hasReferences). Return empty rather than throwing so single-document
-      // reads and the admin edit form keep working - reference counts just read
-      // as zero. Full filter support would parse each doc and apply makeFilter.
-      return {
-        edges: [],
-        pageInfo: {
-          hasPreviousPage: false,
-          hasNextPage: false,
-          startCursor: '',
-          endCursor: '',
-        },
-      };
+      // The resolver fires a reference-check query (hasReferences /
+      // findReferences) using the reference pseudo-index whenever a document is
+      // opened. Without an index we can't answer "what references this", so we
+      // report none - this is what keeps document opens and the edit form
+      // working (reference counts read as zero).
+      if (sort === REFS_COLLECTIONS_SORT_KEY) {
+        return {
+          edges: [],
+          pageInfo: {
+            hasPreviousPage: false,
+            hasNextPage: false,
+            startCursor: '',
+            endCursor: '',
+          },
+        };
+      }
+      // A genuine user filter cannot be served without an index. Fail loudly
+      // rather than silently returning no results (which is impossible to
+      // debug from the consuming app's side).
+      throw new Error(
+        `GitBackedDatabase cannot serve a filtered query on collection "${collectionName}": ` +
+          `filtering requires an index, which the git-only backend has none. ` +
+          `Remove the filter, or use the indexed datalayer (createDatabase).`
+      );
     }
 
     const tinaSchema = await this.getSchema();
