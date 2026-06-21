@@ -11,6 +11,7 @@ export {
   FilesystemBridge,
   AuditFileSystemBridge,
   IsomorphicBridge,
+  GitHubBridge,
   // Users facing
   TinaLevelClient,
   resolve,
