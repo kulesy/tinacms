@@ -6,8 +6,14 @@ import type { Framework } from '../';
 const supportedDatabaseAdapters: {
   'upstash-redis': PromptDatabaseAdapter;
   mongodb: PromptDatabaseAdapter;
+  none: PromptDatabaseAdapter;
   other: PromptDatabaseAdapter;
 } = {
+  // Git-only: no database adapter at all. The database.ts template emits a
+  // GitBackedDatabase over a bridge instead of createDatabase({ databaseAdapter }).
+  none: {
+    databaseAdapterClassText: '',
+  },
   ['upstash-redis']: {
     databaseAdapterClassText: `new RedisLevel({
         redis: {
@@ -56,6 +62,9 @@ const databaseAdapterUpdateConfig: {
   }) => Promise<void>;
 } = {
   other: async (_args) => {},
+  none: async ({ config }) => {
+    config.gitOnly = true;
+  },
   mongodb: async ({ config }) => {
     const result = await prompts([
       {
@@ -112,6 +121,10 @@ export const chooseDatabaseAdapter = async ({
       type: 'select',
       choices: [
         {
+          title: 'None (git-only, no database)',
+          value: 'none',
+        },
+        {
           title: 'Vercel KV/Upstash Redis',
           value: 'upstash-redis',
         },
@@ -132,6 +145,7 @@ export const chooseDatabaseAdapter = async ({
   const chosen = answers.dataLayerAdapter as
     | 'upstash-redis'
     | 'mongodb'
+    | 'none'
     | 'other';
 
   await databaseAdapterUpdateConfig[chosen]({ config });

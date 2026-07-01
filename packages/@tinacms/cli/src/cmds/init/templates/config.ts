@@ -128,7 +128,89 @@ const generateCollectionString = (args: ConfigTemplateArgs) => {
   return baseCollections;
 };
 
+// Git-only config: per-user GitHub OAuth (via NextAuth) with a local-mode
+// bypass. Auth rides the same-origin session cookie, so the content API
+// authenticates each request as the signed-in editor.
+const generateGitOnlyConfig = (args: ConfigTemplateArgs) => {
+  return `
+  import { AbstractAuthProvider, defineConfig } from "tinacms";
+  ${args.extraText || ''}
+
+  class GitHubAuthProvider extends AbstractAuthProvider {
+    async authenticate() {
+      const callbackUrl = window.location.href;
+      window.location.href =
+        "/api/auth/signin/github?callbackUrl=" + encodeURIComponent(callbackUrl);
+      return {};
+    }
+    async getToken() {
+      return { id_token: "" };
+    }
+    async getUser() {
+      try {
+        const res = await fetch("/api/auth/session");
+        const session = await res.json();
+        return session && session.user ? session.user : false;
+      } catch {
+        return false;
+      }
+    }
+    async logout() {
+      const { csrfToken } = await fetch("/api/auth/csrf").then((r) => r.json());
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          csrfToken,
+          callbackUrl: window.location.origin + "/admin/index.html",
+        }),
+      });
+    }
+  }
+
+  // Local mode (TINA_PUBLIC_IS_LOCAL=true) skips GitHub sign-in; the local
+  // backend doesn't enforce auth.
+  class LocalBypassAuthProvider extends AbstractAuthProvider {
+    async authenticate() { return {}; }
+    async getToken() { return { id_token: "" }; }
+    async getUser() { return { name: "Local Editor" }; }
+    async logout() {}
+  }
+
+  const branch = process.env.GITHUB_BRANCH ||
+    process.env.VERCEL_GIT_COMMIT_REF ||
+    process.env.HEAD ||
+    "main"
+  const isLocal = process.env.${args.isLocalEnvVarName} === 'true'
+
+  export default defineConfig({
+    contentApiUrlOverride: "/api/tina/gql",
+    authProvider: isLocal
+      ? new LocalBypassAuthProvider()
+      : new GitHubAuthProvider(),
+    branch,
+    build: {
+      outputFolder: "admin",
+      publicFolder: "${args.publicFolder}",
+    },
+    media: {
+      tina: {
+        mediaRoot: "",
+        publicFolder: "${args.publicFolder}",
+      },
+    },
+    // See docs on content modeling: https://tina.io/docs/r/content-modelling-collections/
+    schema: {
+      collections: ${generateCollectionString(args)},
+    },
+  });
+`;
+};
+
 export const generateConfig = (args: ConfigTemplateArgs) => {
+  if (args.config.gitOnly) {
+    return generateGitOnlyConfig(args);
+  }
   const isUsingTinaCloud =
     !args.selfHosted || args.config.authProvider?.name === 'tina-cloud';
 

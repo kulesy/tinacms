@@ -115,6 +115,11 @@ const detectEnvironment = async ({
       'next-api-handler',
       path.join(...pagesDir, 'api', 'tina')
     ),
+    'next-auth-handler': await makeGeneratedFile(
+      '[...nextauth]',
+      'next-auth-handler',
+      path.join(...pagesDir, 'api', 'auth')
+    ),
     'reactive-example': await makeGeneratedFile(
       '[filename]',
       'reactive-example',

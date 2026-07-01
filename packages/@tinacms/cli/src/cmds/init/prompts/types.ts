@@ -9,6 +9,10 @@ export type Config = {
   forestryMigrate: boolean;
   frontMatterFormat?: ContentFrontmatterFormat;
   hosting?: 'tina-cloud' | 'self-host';
+  // Git-only self-hosting: no external database and no index. Content is read
+  // and written straight through a bridge (filesystem at build, GitHub per-user
+  // at runtime). Set when the "None (git-only)" database option is chosen.
+  gitOnly?: boolean;
   gitProvider?: PromptGitProvider;
   databaseAdapter?: PromptDatabaseAdapter;
   authProvider?: PromptAuthProvider;

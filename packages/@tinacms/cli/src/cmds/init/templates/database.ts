@@ -8,6 +8,19 @@ export type Variables = {
 export type DatabaseAdapterTypes = 'upstash-redis';
 
 export const databaseTemplate = ({ config }: { config: Config }) => {
+  if (config.gitOnly) {
+    // Git-only: no external database and no index. Build-time reads resolve
+    // straight from the working tree; editor writes are committed per-user by
+    // the content API route (pages/api/tina/[...routes]).
+    return `
+import { GitBackedDatabase, FilesystemBridge } from '@tinacms/datalayer'
+
+export default new GitBackedDatabase({
+  bridge: new FilesystemBridge(process.cwd()),
+  tinaDirectory: 'tina',
+})
+`;
+  }
   return `
 import { createDatabase, createLocalDatabase } from '@tinacms/datalayer'
 ${makeImportString(config.gitProvider?.imports)}

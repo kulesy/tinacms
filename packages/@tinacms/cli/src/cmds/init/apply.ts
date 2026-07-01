@@ -18,6 +18,7 @@ import { templates as NextTemplates } from './templates/next';
 import { ConfigTemplateArgs, generateConfig } from './templates/config';
 import { databaseTemplate } from './templates/database';
 import { nextApiRouteTemplate } from './templates/tinaNextRoute';
+import { nextAuthRouteTemplate } from './templates/nextAuthRoute';
 import { astroHelloWorldPost, helloWorldPost } from './templates/content';
 import { format } from 'prettier';
 import {
@@ -141,28 +142,36 @@ async function apply({
       config,
       generatedFile: env.generatedFiles['next-api-handler'],
     });
-    // add content/users/index.json file
-    await addTemplateFile({
-      config,
-      generatedFile: env.generatedFiles['users-json'],
-      content: JSON.stringify(
-        {
-          users: [
-            {
-              name: 'Tina User',
-              email: 'user@tina.io',
-              username: 'tinauser',
-              password: {
-                value: 'tinarocks',
-                passwordChangeRequired: true,
+    if (config.gitOnly) {
+      // add pages/api/auth/[...nextauth].ts (per-user GitHub sign-in)
+      await addNextAuthRoute({
+        config,
+        generatedFile: env.generatedFiles['next-auth-handler'],
+      });
+    } else {
+      // add content/users/index.json file
+      await addTemplateFile({
+        config,
+        generatedFile: env.generatedFiles['users-json'],
+        content: JSON.stringify(
+          {
+            users: [
+              {
+                name: 'Tina User',
+                email: 'user@tina.io',
+                username: 'tinauser',
+                password: {
+                  value: 'tinarocks',
+                  passwordChangeRequired: true,
+                },
               },
-            },
-          ],
-        },
-        null,
-        2
-      ),
-    });
+            ],
+          },
+          null,
+          2
+        ),
+      });
+    }
   }
 
   // add NextJS Demo file (First time init only)
@@ -228,6 +237,8 @@ async function apply({
     params.isBackendInit &&
     // Do the user choose the 'self-host' option
     config.hosting === 'self-host' &&
+    // git-only writes its own config; the authjs codegen doesn't apply
+    !config.gitOnly &&
     // the user did not choose the 'tina-cloud' auth provider
     (config.authProvider?.name || '') !== 'tina-cloud'
   ) {
@@ -510,6 +521,22 @@ const addNextApiRoute = async ({
   await writeGeneratedFile({
     generatedFile,
     overwrite: config.overwriteList?.includes('next-api-handler'),
+    content,
+    typescript: config.typescript,
+  });
+};
+
+const addNextAuthRoute = async ({
+  config,
+  generatedFile,
+}: {
+  config: Config;
+  generatedFile: GeneratedFile;
+}) => {
+  const content = format(nextAuthRouteTemplate(), { parser: 'babel' });
+  await writeGeneratedFile({
+    generatedFile,
+    overwrite: config.overwriteList?.includes('next-auth-handler'),
     content,
     typescript: config.typescript,
   });

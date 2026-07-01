@@ -20,6 +20,7 @@ export type ReactiveFramework = 'next';
 
 export type GeneratedFileType =
   | 'next-api-handler'
+  | 'next-auth-handler'
   | 'config'
   | 'database'
   | 'templates'

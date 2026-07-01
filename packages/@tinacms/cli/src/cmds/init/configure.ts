@@ -100,11 +100,15 @@ async function configure(
     if (result.hosting === 'tina-cloud') {
       await askTinaCloudSetup({ config });
     } else if (result.hosting === 'self-host') {
-      config.gitProvider = await chooseGitProvider({ config });
+      // Choose the database first: "None (git-only)" sets config.gitOnly, which
+      // swaps the git provider PAT prompt for the per-user GitHub App flow.
       config.databaseAdapter = await chooseDatabaseAdapter({
         framework,
         config,
       });
+      if (!config.gitOnly) {
+        config.gitProvider = await chooseGitProvider({ config });
+      }
       config.authProvider = await chooseAuthProvider({
         framework,
         config,
@@ -137,7 +141,13 @@ async function configure(
   if (config.hosting === 'self-host') {
     generatedFilesInUse.push(env.generatedFiles.database);
     generatedFilesInUse.push(env.generatedFiles['next-api-handler']);
-    generatedFilesInUse.push(env.generatedFiles['users-json']);
+    if (config.gitOnly) {
+      // Git-only signs in with GitHub, so there's a NextAuth route and no
+      // username/password user collection.
+      generatedFilesInUse.push(env.generatedFiles['next-auth-handler']);
+    } else {
+      generatedFilesInUse.push(env.generatedFiles['users-json']);
+    }
   }
   if (config.framework.reactive && firstTimeSetup) {
     generatedFilesInUse.push(env.generatedFiles['reactive-example']);
