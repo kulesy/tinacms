@@ -1,6 +1,6 @@
 import http from 'http';
 import type { AddressInfo } from 'net';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import crypto from 'crypto-js';
 import prompts from 'prompts';
 
@@ -26,13 +26,16 @@ const envKeys = [
 type CreatedApp = { slug: string; client_id: string; client_secret: string };
 
 const openBrowser = (url: string) => {
-  const cmd =
+  // Pass the URL as a separate argv entry (never interpolated into a shell
+  // command line) so an attacker-influenced owner/repo/slug can't inject shell
+  // syntax. On Windows `start` is a cmd builtin, so it's invoked via `cmd /c`.
+  const { cmd, args }: { cmd: string; args: string[] } =
     process.platform === 'darwin'
-      ? `open "${url}"`
+      ? { cmd: 'open', args: [url] }
       : process.platform === 'win32'
-        ? `start "" "${url}"`
-        : `xdg-open "${url}"`;
-  exec(cmd, () => {
+        ? { cmd: 'cmd', args: ['/c', 'start', '', url] }
+        : { cmd: 'xdg-open', args: [url] };
+  execFile(cmd, args, () => {
     // If the browser can't be opened we've already printed the URL to visit.
   });
 };
