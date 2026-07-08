@@ -8,19 +8,20 @@ import { cmdText, linkText, logText } from '../../../utils/theme';
 import { logger } from '../../../logger';
 import type { Config } from './types';
 
-// The dev app's NextAuth callback. The GitHub App needs this registered up front
-// so per-user sign-in works without a second trip to GitHub's settings.
-const DEV_NEXTAUTH_CALLBACK = 'http://localhost:3000/api/auth/callback/github';
+// The dev app's Auth.js callback (served by auth-astro). Registered on the App
+// up front so per-user sign-in works without a second trip to GitHub's settings.
+// 4321 is Astro's default dev port.
+const DEV_AUTH_CALLBACK = 'http://localhost:4321/api/auth/callback/github';
 
 const envKeys = [
   'GITHUB_OWNER',
   'GITHUB_REPO',
   'GITHUB_BRANCH',
-  'GITHUB_OAUTH_CLIENT_ID',
-  'GITHUB_OAUTH_CLIENT_SECRET',
+  'GITHUB_CLIENT_ID',
+  'GITHUB_CLIENT_SECRET',
   'GITHUB_APP_SLUG',
-  'NEXTAUTH_SECRET',
-  'NEXTAUTH_URL',
+  'AUTH_SECRET',
+  'AUTH_TRUST_HOST',
 ] as const;
 
 type CreatedApp = { slug: string; client_id: string; client_secret: string };
@@ -99,7 +100,7 @@ const createAppViaManifest = async (
     name: `tina-${repo || 'site'}-${suffix}`.slice(0, 34),
     url: origin,
     redirect_url: `${origin}/callback`,
-    callback_urls: [DEV_NEXTAUTH_CALLBACK],
+    callback_urls: [DEV_AUTH_CALLBACK],
     public: false,
     default_permissions: { contents: 'write', metadata: 'read' },
     default_events: [],
@@ -137,7 +138,7 @@ const createAppViaManifest = async (
 };
 
 // Auth setup for the git-only path: collect owner/repo, create the GitHub App
-// via the manifest flow, and write its credentials + a NextAuth secret into
+// via the manifest flow, and write its credentials + an Auth.js secret into
 // config.envVars so apply() can drop them into .env.
 export const setupGitHubApp = async ({ config }: { config: Config }) => {
   const { owner, repo } = await prompts([
@@ -169,18 +170,18 @@ export const setupGitHubApp = async ({ config }: { config: Config }) => {
     GITHUB_OWNER: owner || '',
     GITHUB_REPO: repo || '',
     GITHUB_BRANCH: 'main',
-    GITHUB_OAUTH_CLIENT_ID: '',
-    GITHUB_OAUTH_CLIENT_SECRET: '',
+    GITHUB_CLIENT_ID: '',
+    GITHUB_CLIENT_SECRET: '',
     GITHUB_APP_SLUG: '',
-    NEXTAUTH_SECRET: crypto.lib.WordArray.random(16).toString(),
-    NEXTAUTH_URL: 'http://localhost:3000',
+    AUTH_SECRET: crypto.lib.WordArray.random(32).toString(),
+    AUTH_TRUST_HOST: 'true',
   };
 
   if (createNow) {
     try {
       const app = await createAppViaManifest(owner || '', repo || '');
-      env.GITHUB_OAUTH_CLIENT_ID = app.client_id;
-      env.GITHUB_OAUTH_CLIENT_SECRET = app.client_secret;
+      env.GITHUB_CLIENT_ID = app.client_id;
+      env.GITHUB_CLIENT_SECRET = app.client_secret;
       env.GITHUB_APP_SLUG = app.slug;
       const installUrl = `https://github.com/apps/${app.slug}/installations/new`;
       logger.info(`GitHub App ${cmdText(app.slug)} created. ✅`);
@@ -194,7 +195,7 @@ export const setupGitHubApp = async ({ config }: { config: Config }) => {
       logger.warn(
         `Could not finish GitHub App creation (${
           (e as Error).message
-        }). You can set GITHUB_OAUTH_CLIENT_ID / _SECRET in .env later.`
+        }). You can set GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET in .env later.`
       );
     }
   }

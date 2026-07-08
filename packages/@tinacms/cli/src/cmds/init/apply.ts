@@ -18,7 +18,8 @@ import { templates as NextTemplates } from './templates/next';
 import { ConfigTemplateArgs, generateConfig } from './templates/config';
 import { databaseTemplate } from './templates/database';
 import { nextApiRouteTemplate } from './templates/tinaNextRoute';
-import { nextAuthRouteTemplate } from './templates/nextAuthRoute';
+import { astroTinaRouteTemplate } from './templates/astroTinaRoute';
+import { astroAuthConfigTemplate } from './templates/astroAuthConfig';
 import { astroHelloWorldPost, helloWorldPost } from './templates/content';
 import { format } from 'prettier';
 import {
@@ -28,6 +29,8 @@ import {
 import {
   type AstroSetupResult,
   logAstroConfigGuidance,
+  logAstroGitOnlyConfigGuidance,
+  setupAstroGitOnly,
   setupAstroVisualEditing,
 } from './astro-visual-editing';
 import { astroNodeAdapterDep } from './astro-config-detect';
@@ -52,16 +55,26 @@ async function apply({
   params: InitParams;
   config: Config;
 }) {
-  if (
-    (config.framework.name === 'other' || config.framework.name === 'astro') &&
-    config.hosting === 'self-host'
-  ) {
-    logger.error(
-      logText(
-        'Self-hosted Tina requires init setup only works with next.js right now. Please check out the docs for info on how to setup Tina on another framework: https://tina.io/docs/r/self-hosting-nextjs'
-      )
-    );
-    return;
+  if (config.hosting === 'self-host') {
+    if (config.gitOnly && config.framework.name !== 'astro') {
+      logger.error(
+        logText(
+          'Git-only self-hosting currently supports Astro. Re-run and choose Astro as your framework.'
+        )
+      );
+      return;
+    }
+    if (
+      !config.gitOnly &&
+      (config.framework.name === 'other' || config.framework.name === 'astro')
+    ) {
+      logger.error(
+        logText(
+          'Database-backed self-hosted Tina only works with Next.js right now. For Astro, choose the git-only (None) database option, or see https://tina.io/docs/r/self-hosting-nextjs'
+        )
+      );
+      return;
+    }
   }
   const { pathToForestryConfig, noTelemetry, baseDir = '' } = params;
   let collections: string | null | undefined;
@@ -136,19 +149,24 @@ async function apply({
       config,
       generatedFile: env.generatedFiles['database'],
     });
-    // add pages/api/tina/[...routes].ts file
-    await addNextApiRoute({
-      env,
-      config,
-      generatedFile: env.generatedFiles['next-api-handler'],
-    });
     if (config.gitOnly) {
-      // add pages/api/auth/[...nextauth].ts (per-user GitHub sign-in)
-      await addNextAuthRoute({
+      // Astro content endpoint (src/pages/api/tina/[...routes].ts) reusing the
+      // same slot, plus auth.config for per-user GitHub sign-in.
+      await addAstroTinaRoute({
         config,
-        generatedFile: env.generatedFiles['next-auth-handler'],
+        generatedFile: env.generatedFiles['next-api-handler'],
+      });
+      await addAstroAuthConfig({
+        config,
+        generatedFile: env.generatedFiles['astro-auth-config'],
       });
     } else {
+      // add pages/api/tina/[...routes].ts file
+      await addNextApiRoute({
+        env,
+        config,
+        generatedFile: env.generatedFiles['next-api-handler'],
+      });
       // add content/users/index.json file
       await addTemplateFile({
         config,
@@ -198,13 +216,19 @@ async function apply({
   // Wire the Astro dev/build scripts + scaffold the visual-editing demo
   // (first-time init only)
   let astroSetup: AstroSetupResult | null = null;
+  let astroGitOnly = false;
   if (
     config.framework.name === 'astro' &&
     !env.tinaConfigExists &&
     !env.forestryConfigExists
   ) {
     await updateAstroPackageJson({ baseDir });
-    astroSetup = setupAstroVisualEditing({ baseDir });
+    if (config.gitOnly) {
+      astroGitOnly = true;
+      astroSetup = setupAstroGitOnly({ baseDir });
+    } else {
+      astroSetup = setupAstroVisualEditing({ baseDir });
+    }
   }
 
   await addDependencies(config, env, params);
@@ -255,7 +279,11 @@ async function apply({
   });
 
   if (astroSetup && !astroSetup.configHandled) {
-    logAstroConfigGuidance();
+    if (astroGitOnly) {
+      logAstroGitOnlyConfigGuidance();
+    } else {
+      logAstroConfigGuidance();
+    }
   }
 }
 
@@ -526,17 +554,33 @@ const addNextApiRoute = async ({
   });
 };
 
-const addNextAuthRoute = async ({
+const addAstroTinaRoute = async ({
   config,
   generatedFile,
 }: {
   config: Config;
   generatedFile: GeneratedFile;
 }) => {
-  const content = format(nextAuthRouteTemplate(), { parser: 'babel' });
+  const content = format(astroTinaRouteTemplate(), { parser: 'babel' });
   await writeGeneratedFile({
     generatedFile,
-    overwrite: config.overwriteList?.includes('next-auth-handler'),
+    overwrite: config.overwriteList?.includes('next-api-handler'),
+    content,
+    typescript: config.typescript,
+  });
+};
+
+const addAstroAuthConfig = async ({
+  config,
+  generatedFile,
+}: {
+  config: Config;
+  generatedFile: GeneratedFile;
+}) => {
+  const content = format(astroAuthConfigTemplate(), { parser: 'babel' });
+  await writeGeneratedFile({
+    generatedFile,
+    overwrite: config.overwriteList?.includes('astro-auth-config'),
     content,
     typescript: config.typescript,
   });
@@ -586,7 +630,9 @@ const addContentFile = async ({
     },
     overwrite: config.overwriteList?.includes('sample-content'),
     content:
-      config.framework?.name === 'astro' ? astroHelloWorldPost : helloWorldPost,
+      config.framework?.name === 'astro' && !config.gitOnly
+        ? astroHelloWorldPost
+        : helloWorldPost,
     typescript: false,
   });
 };

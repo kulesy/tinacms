@@ -14,12 +14,12 @@ const supportedAuthProviders: {
   other: {
     name: 'other',
   },
-  // Per-user GitHub OAuth for git-only self-hosting. The config auth class and
-  // the API routes are emitted by the git-only templates, so only the name and
-  // the next-auth peer dep are declared here.
+  // Per-user GitHub OAuth for git-only self-hosting on Astro. The config auth
+  // class, the content endpoint, and auth.config are emitted by the git-only
+  // templates; auth-astro (Auth.js) provides the sign-in routes.
   github: {
     name: 'github',
-    peerDependencies: ['next-auth'],
+    peerDependencies: ['auth-astro', '@auth/core'],
   },
   'tina-cloud': {
     configAuthProviderClass: '',

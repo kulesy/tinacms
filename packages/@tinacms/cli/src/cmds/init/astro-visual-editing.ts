@@ -338,3 +338,72 @@ export const setupAstroVisualEditing = ({
 export const logAstroConfigGuidance = () => {
   logger.info(logText(CONFIG_GUIDANCE));
 };
+
+// SSR + the Tina admin integration + auth-astro (which auto-registers
+// /api/auth/*). Everything the git-only backend needs to run and sign editors
+// in; no visual-editing demo.
+const GIT_ONLY_ASTRO_CONFIG = `import { defineConfig } from 'astro/config';
+import node from '@astrojs/node';
+import tina from '@tinacms/astro/integration';
+import { tinaAdminDevRedirect } from '@tinacms/astro/vite';
+import auth from 'auth-astro';
+
+// https://astro.build/config
+export default defineConfig({
+  output: 'server',
+  adapter: node({ mode: 'standalone' }),
+  integrations: [tina(), auth()],
+  vite: {
+    plugins: [tinaAdminDevRedirect()],
+    ssr: { noExternal: ['@tinacms/astro', '@tinacms/bridge'] },
+  },
+});
+`;
+
+const GIT_ONLY_CONFIG_GUIDANCE = `Your astro.config already has content, so it was left unchanged.
+Add an SSR adapter plus the Tina and auth-astro integrations so the admin, the
+content API, and GitHub sign-in all work:
+
+  import node from '@astrojs/node';
+  import tina from '@tinacms/astro/integration';
+  import { tinaAdminDevRedirect } from '@tinacms/astro/vite';
+  import auth from 'auth-astro';
+
+  export default defineConfig({
+    output: 'server',
+    adapter: node({ mode: 'standalone' }),
+    integrations: [tina(), auth() /* , ...your integrations */],
+    vite: {
+      plugins: [tinaAdminDevRedirect()],
+      ssr: { noExternal: ['@tinacms/astro', '@tinacms/bridge'] },
+    },
+  });`;
+
+// Wires astro.config for the git-only backend, mirroring setupAstroVisualEditing's
+// write rules: create if absent, overwrite the untouched scaffold, else leave a
+// real config alone (the caller prints guidance).
+export const setupAstroGitOnly = ({
+  baseDir,
+}: {
+  baseDir: string;
+}): AstroSetupResult => {
+  const configPath = findAstroConfig(baseDir);
+  if (!configPath) {
+    fs.writeFileSync(
+      path.join(baseDir, 'astro.config.mjs'),
+      GIT_ONLY_ASTRO_CONFIG
+    );
+    logger.info('Creating astro.config for the git-only backend... ✅');
+    return { configHandled: true, demoScaffolded: false };
+  }
+  if (isDefaultAstroConfig(fs.readFileSync(configPath).toString())) {
+    fs.writeFileSync(configPath, GIT_ONLY_ASTRO_CONFIG);
+    logger.info('Wiring astro.config for the git-only backend... ✅');
+    return { configHandled: true, demoScaffolded: false };
+  }
+  return { configHandled: false, demoScaffolded: false };
+};
+
+export const logAstroGitOnlyConfigGuidance = () => {
+  logger.info(logText(GIT_ONLY_CONFIG_GUIDANCE));
+};

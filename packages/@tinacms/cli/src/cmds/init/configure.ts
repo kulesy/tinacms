@@ -142,9 +142,9 @@ async function configure(
     generatedFilesInUse.push(env.generatedFiles.database);
     generatedFilesInUse.push(env.generatedFiles['next-api-handler']);
     if (config.gitOnly) {
-      // Git-only signs in with GitHub, so there's a NextAuth route and no
+      // Git-only (Astro) signs in with GitHub via auth.config, not a
       // username/password user collection.
-      generatedFilesInUse.push(env.generatedFiles['next-auth-handler']);
+      generatedFilesInUse.push(env.generatedFiles['astro-auth-config']);
     } else {
       generatedFilesInUse.push(env.generatedFiles['users-json']);
     }

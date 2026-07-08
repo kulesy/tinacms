@@ -20,7 +20,7 @@ export type ReactiveFramework = 'next';
 
 export type GeneratedFileType =
   | 'next-api-handler'
-  | 'next-auth-handler'
+  | 'astro-auth-config'
   | 'config'
   | 'database'
   | 'templates'
