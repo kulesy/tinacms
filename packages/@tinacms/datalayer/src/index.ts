@@ -11,11 +11,13 @@ export {
   FilesystemBridge,
   AuditFileSystemBridge,
   IsomorphicBridge,
+  GitHubBridge,
   // Users facing
   TinaLevelClient,
   resolve,
   createDatabase,
   createLocalDatabase,
+  GitBackedDatabase,
 } from '@tinacms/graphql';
 
 export * from './backend';

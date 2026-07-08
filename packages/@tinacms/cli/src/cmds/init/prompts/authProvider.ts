@@ -3,14 +3,23 @@ import prompts from 'prompts';
 
 import type { Framework } from '../';
 import { askTinaCloudSetup } from './askTinaCloudSetup';
+import { setupGitHubApp } from './githubApp';
 import type { Config, PromptAuthProvider } from './types';
 const supportedAuthProviders: {
   'tina-cloud': PromptAuthProvider;
   'next-auth': PromptAuthProvider;
+  github: PromptAuthProvider;
   other: PromptAuthProvider;
 } = {
   other: {
     name: 'other',
+  },
+  // Per-user GitHub OAuth for git-only self-hosting on Astro. The config auth
+  // class, the content endpoint, and auth.config are emitted by the git-only
+  // templates; auth-astro (Auth.js) provides the sign-in routes.
+  github: {
+    name: 'github',
+    peerDependencies: ['auth-astro', '@auth/core'],
   },
   'tina-cloud': {
     configAuthProviderClass: '',
@@ -60,6 +69,7 @@ const authProviderUpdateConfig: {
   }) => Promise<void>;
 } = {
   other: async () => {},
+  github: setupGitHubApp,
   'tina-cloud': askTinaCloudSetup,
   'next-auth': async ({ config }) => {
     const result = await prompts([
@@ -120,6 +130,13 @@ export const chooseAuthProvider = async ({
   // await authProviderUpdateConfig[authProviderChoice.authProvider]({
   //   config,
   // })
+  // Git-only self-hosting signs editors in with GitHub (per-user OAuth), not the
+  // next-auth username/password user collection.
+  if (config.gitOnly) {
+    await authProviderUpdateConfig['github']({ config });
+    return supportedAuthProviders['github'];
+  }
+
   const authProvider = supportedAuthProviders['next-auth'];
 
   await authProviderUpdateConfig['next-auth']({

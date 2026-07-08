@@ -10,6 +10,7 @@ export * from './types';
 export * from './gitProvider';
 export * from './databaseAdapter';
 export * from './authProvider';
+export * from './githubApp';
 
 const forestryDisclaimer = logText(
   `Note: This migration will update some of your content to match tina.  Please save a backup of your content before doing this migration. (This can be done with git)`

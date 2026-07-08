@@ -115,6 +115,11 @@ const detectEnvironment = async ({
       'next-api-handler',
       path.join(...pagesDir, 'api', 'tina')
     ),
+    'astro-auth-config': await makeGeneratedFile(
+      'auth.config',
+      'astro-auth-config',
+      baseDir
+    ),
     'reactive-example': await makeGeneratedFile(
       '[filename]',
       'reactive-example',

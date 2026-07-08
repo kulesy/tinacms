@@ -24,6 +24,7 @@ export {
   createDatabase,
   createLocalDatabase,
 } from './database';
+export { GitBackedDatabase } from './database/git-backed-database';
 import type { Config } from '@tinacms/schema-tools';
 export { getChangedFiles, getSha, shaExists } from './git';
 export * from './auth/utils';
@@ -59,4 +60,6 @@ export {
   AuditFileSystemBridge,
 } from './database/bridge/filesystem';
 export { IsomorphicBridge } from './database/bridge/isomorphic';
+export { GitHubBridge } from './database/bridge/github';
+export type { GitHubBridgeOptions } from './database/bridge/github';
 export type { Bridge } from './database/bridge';
